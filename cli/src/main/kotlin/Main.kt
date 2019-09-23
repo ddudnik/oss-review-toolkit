@@ -77,6 +77,13 @@ object Main : CommandWithHelp() {
         exitProcess(run(args))
     }
 
+    private fun JCommander.addSubCommand(command: Any): JCommander {
+        addCommand(command)
+
+        // JCommander internally uses a LinkedHashMap which maintains the insertion order.
+        return commands.values.last()
+    }
+
     /**
      * Run the ORT CLI with the provided [args] and return the exit code of [CommandWithHelp.run].
      */
@@ -85,6 +92,8 @@ object Main : CommandWithHelp() {
             programName = TOOL_NAME
             setExpandAtSign(false)
             addCommand(AnalyzerCommand)
+            addSubCommand(ClearlyDefinedCommand)
+                .addSubCommand(ClearlyDefinedCommand.CurationsCommand)
             addCommand(DownloaderCommand)
             addCommand(EvaluatorCommand)
             addCommand(ReporterCommand)
