@@ -37,6 +37,10 @@ import java.net.URL
  */
 interface ClearlyDefinedService {
     companion object {
+        /**
+         * Create a service instance to communicate with the ClearlyDefined REST API as described at
+         * https://api.clearlydefined.io/api-docs/.
+         */
         fun create(server: Server): ClearlyDefinedService {
             val retrofit = Retrofit.Builder()
                 .baseUrl(server.url)
@@ -47,6 +51,9 @@ interface ClearlyDefinedService {
         }
     }
 
+    /**
+     * See https://github.com/clearlydefined/service/blob/3416f48b58c089d93a6b1eb6242f5815529fdf5f/schemas/swagger.yaml#L8-L14.
+     */
     enum class Server(val url: String) {
         PRODUCTION("https://api.clearlydefined.io"),
         DEVELOPMENT("https://dev-api.clearlydefined.io"),
@@ -54,7 +61,7 @@ interface ClearlyDefinedService {
     }
 
     /**
-     * See https://github.com/clearlydefined/service/blob/master/schemas/curation-1.0.json.
+     * See https://github.com/clearlydefined/service/blob/3416f48b58c089d93a6b1eb6242f5815529fdf5f/schemas/curation-1.0.json#L7.
      */
     data class Curation(
         val described: Described? = null,
@@ -62,6 +69,9 @@ interface ClearlyDefinedService {
         val licensed: Licensed? = null
     )
 
+    /**
+     * See https://github.com/clearlydefined/service/blob/3416f48b58c089d93a6b1eb6242f5815529fdf5f/schemas/curation-1.0.json#L63.
+     */
     data class Described(
         val facets: Facets? = null,
         val issueTracker: URL? = null,
@@ -70,6 +80,9 @@ interface ClearlyDefinedService {
         val sourceLocation: SourceLocation? = null
     )
 
+    /**
+     * See https://github.com/clearlydefined/service/blob/3416f48b58c089d93a6b1eb6242f5815529fdf5f/schemas/curation-1.0.json#L67.
+     */
     data class Facets(
         val data: List<String>? = null,
         val dev: List<String>? = null,
@@ -78,6 +91,9 @@ interface ClearlyDefinedService {
         val tests: List<String>? = null
     )
 
+    /**
+     * See https://github.com/clearlydefined/service/blob/3416f48b58c089d93a6b1eb6242f5815529fdf5f/schemas/curation-1.0.json#L133.
+     */
     data class SourceLocation(
         val name: String,
         val namespace: String? = null,
@@ -88,7 +104,9 @@ interface ClearlyDefinedService {
         val url: String? = null
     )
 
-    // See https://github.com/clearlydefined/service/blob/master/schemas/curation-1.0.json#L44
+    /**
+     * See https://github.com/clearlydefined/service/blob/3416f48b58c089d93a6b1eb6242f5815529fdf5f/schemas/curation-1.0.json#L44.
+     */
     enum class Provider(val value: String) {
         COCOAPODS("cocoapods"),
         CRATES_IO("cratesio"),
@@ -111,7 +129,9 @@ interface ClearlyDefinedService {
         override fun toString() = value
     }
 
-    // See https://github.com/clearlydefined/service/blob/master/schemas/curation-1.0.json#L23.
+    /**
+     * See https://github.com/clearlydefined/service/blob/3416f48b58c089d93a6b1eb6242f5815529fdf5f/schemas/curation-1.0.json#L23.
+     */
     enum class Type(val value: String) {
         COMPOSER("composer"),
         CRATE("crate"),
@@ -136,12 +156,18 @@ interface ClearlyDefinedService {
         override fun toString() = value
     }
 
+    /**
+     * See https://github.com/clearlydefined/service/blob/3416f48b58c089d93a6b1eb6242f5815529fdf5f/schemas/curation-1.0.json#L190.
+     */
     data class FileEntry(
         val attributions: List<String>? = null,
         val license: String? = null,
         val path: File
     )
 
+    /**
+     * See https://github.com/clearlydefined/service/blob/3416f48b58c089d93a6b1eb6242f5815529fdf5f/schemas/curation-1.0.json#L229.
+     */
     data class Licensed(
         val declared: String? = null
     )
