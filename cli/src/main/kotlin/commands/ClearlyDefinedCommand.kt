@@ -24,7 +24,9 @@ import com.beust.jcommander.Parameter
 import com.beust.jcommander.Parameters
 
 import com.here.ort.CommandWithHelp
+import com.here.ort.utils.PARAMETER_ORDER_MANDATORY
 import com.here.ort.utils.PARAMETER_ORDER_OPTIONAL
+import java.io.File
 
 @Parameters(commandNames = ["cd"], commandDescription = "Interact with the ClearlyDefined service.")
 object ClearlyDefinedCommand : CommandWithHelp() {
@@ -43,10 +45,16 @@ object ClearlyDefinedCommand : CommandWithHelp() {
         }
     }
 
+    @Parameter(
+        description = "The ClearlyDefined command to use."
+    )
+    @Suppress("LateinitUsage")
+    private lateinit var mainCommand: String
+
     override fun runCommand(jc: JCommander): Int {
         // JCommander already validates the command names.
         val command = jc.commands[jc.parsedCommand]!!
-        val subCommand = command.commands[command.parsedCommand]!!
+        val subCommand = command.commands[mainCommand]!!
         val commandObject = subCommand.objects.first() as CommandWithHelp
 
         // Delegate running actions to the specified command.

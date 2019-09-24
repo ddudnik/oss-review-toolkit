@@ -81,7 +81,7 @@ object Main : CommandWithHelp() {
         addCommand(command)
 
         // JCommander internally uses a LinkedHashMap which maintains the insertion order.
-        return commands.values.last()
+        return commands.values.last()//.also { it.programName = "ort" }
     }
 
     /**
@@ -94,6 +94,7 @@ object Main : CommandWithHelp() {
             addCommand(AnalyzerCommand)
             addSubCommand(ClearlyDefinedCommand)
                 .addSubCommand(ClearlyDefinedCommand.CurationsCommand)
+                .parse(*args)
             addCommand(DownloaderCommand)
             addCommand(EvaluatorCommand)
             addCommand(ReporterCommand)
