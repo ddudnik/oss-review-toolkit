@@ -40,15 +40,7 @@ import com.here.ort.model.ScannerDetails
 import com.here.ort.model.ScannerRun
 import com.here.ort.model.config.ScannerConfiguration
 import com.here.ort.model.mapper
-import com.here.ort.utils.CommandLineTool
-import com.here.ort.utils.NamedThreadFactory
-import com.here.ort.utils.Os
-import com.here.ort.utils.collectMessagesAsString
-import com.here.ort.utils.fileSystemEncode
-import com.here.ort.utils.getPathFromEnvironment
-import com.here.ort.utils.log
-import com.here.ort.utils.safeMkdirs
-import com.here.ort.utils.showStackTrace
+import com.here.ort.utils.*
 
 import com.vdurmont.semver4j.Requirement
 
@@ -61,12 +53,15 @@ import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
+import java.security.MessageDigest
 
 /**
  * Implementation of [Scanner] for scanners that operate locally. Packages passed to [scanPackages] are processed in
  * serial order. Scan results can be stored in a [ScanResultsStorage].
  */
 abstract class LocalScanner(name: String, config: ScannerConfiguration) : Scanner(name, config), CommandLineTool {
+    val archiver by lazy { config.archive?.create() }
+
     /**
      * A property containing the file name extension of the scanner's native output format, without the dot.
      */
@@ -300,11 +295,26 @@ abstract class LocalScanner(name: String, config: ScannerConfiguration) : Scanne
             downloadResult.dateTime, downloadResult.sourceArtifact, downloadResult.vcsInfo,
             downloadResult.originalVcsInfo
         )
+
+        archiveFiles(downloadResult.downloadDirectory, pkg.id, provenance)
+
         val scanResult = scanPath(downloadResult.downloadDirectory, resultsFile).copy(provenance = provenance)
 
         ScanResultsStorage.storage.add(pkg.id, scanResult)
 
         return scanResult
+    }
+
+    private fun archiveFiles(directory: File, id: Identifier, provenance: Provenance) {
+        archiver?.let {
+            log.info { "Archiving files for ${id.toCoordinates()}." }
+
+            val provenanceBytes = provenance.toString().toByteArray()
+            val provenanceHash = MessageDigest.getInstance("SHA-1").digest(provenanceBytes).toHexString()
+            val path = "${id.toPath()}/$provenanceHash"
+
+            it.archive(directory, path)
+        }
     }
 
     /**
