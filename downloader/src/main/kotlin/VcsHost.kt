@@ -77,6 +77,28 @@ enum class VcsHost(
 
             return VcsInfo(type, vcsUrl, revision, path = path)
         }
+
+        override fun toPermalink(vcsUrl: URI, revision: String, path: String, startLine: Int, endLine: Int): String {
+            var permalink = "https://${vcsUrl.host}${vcsUrl.path}"
+
+            if (revision.isNotEmpty()) {
+                permalink += "/src/$revision"
+
+                if (path.isNotEmpty()) {
+                    permalink += "/$path"
+
+                    if (startLine != -1) {
+                        permalink += "#lines-$startLine"
+
+                        if (endLine != -1) {
+                            permalink += ":$endLine"
+                        }
+                    }
+                }
+            }
+
+            return permalink
+        }
     },
 
     /**
@@ -84,6 +106,36 @@ enum class VcsHost(
      */
     GITHUB("github.com", VcsType.GIT) {
         override fun toVcsInfo(projectUrl: URI) = gitProjectUrlToVcsInfo(projectUrl)
+
+        override fun toPermalink(vcsUrl: URI, revision: String, path: String, startLine: Int, endLine: Int): String {
+            var permalink = "https://${vcsUrl.host}${vcsUrl.path.removeSuffix(".git")}"
+
+            if (revision.isNotEmpty()) {
+                // GitHub is tolerant about "blob" vs. "tree" here.
+                val gitObject = if (path.isNotEmpty()) {
+                    // Markdown files are usually rendered and can only link to lines in blame view.
+                    if (path.endsWith(".md") && startLine != -1) "blame" else "blob"
+                } else {
+                    "commit"
+                }
+
+                permalink += "/$gitObject/$revision"
+
+                if (path.isNotEmpty()) {
+                    permalink += "/$path"
+
+                    if (startLine != -1) {
+                        permalink += "#L$startLine"
+
+                        if (endLine != -1) {
+                            permalink += "-L$endLine"
+                        }
+                    }
+                }
+            }
+
+            return permalink
+        }
     },
 
     /**
@@ -91,6 +143,36 @@ enum class VcsHost(
      */
     GITLAB("gitlab.com", VcsType.GIT) {
         override fun toVcsInfo(projectUrl: URI) = gitProjectUrlToVcsInfo(projectUrl)
+
+        override fun toPermalink(vcsUrl: URI, revision: String, path: String, startLine: Int, endLine: Int): String {
+            var permalink = "https://${vcsUrl.host}${vcsUrl.path.removeSuffix(".git")}"
+
+            if (revision.isNotEmpty()) {
+                // GitLab is tolerant about "blob" vs. "tree" here.
+                val gitObject = if (path.isNotEmpty()) {
+                    // Markdown files are usually rendered and can only link to lines in blame view.
+                    if (path.endsWith(".md") && startLine != -1) "blame" else "blob"
+                } else {
+                    "commit"
+                }
+
+                permalink += "/$gitObject/$revision"
+
+                if (path.isNotEmpty()) {
+                    permalink += "/$path"
+
+                    if (startLine != -1) {
+                        permalink += "#L$startLine"
+
+                        if (endLine != -1) {
+                            permalink += "-$endLine"
+                        }
+                    }
+                }
+            }
+
+            return permalink
+        }
     };
 
     companion object {
@@ -105,6 +187,19 @@ enum class VcsHost(
             } catch (e: URISyntaxException) {
                 null
             }
+
+        /**
+         * Return the host-specific permanent link to browse the code location described by [vcsInfo] with optional
+         * highlighting of [startLine] to [endLine].
+         */
+        fun toPermalink(vcsInfo: VcsInfo, startLine: Int = -1, endLine: Int = -1): String? {
+            if (!validateLineRange(startLine, endLine)) return null
+            return values().find { host -> host.isApplicable(vcsInfo) }
+                    ?.toPermalink(URI(vcsInfo.url), vcsInfo.revision, vcsInfo.path, startLine, endLine)
+        }
+
+        protected fun validateLineRange(startLine: Int, endLine: Int): Boolean =
+            (startLine == -1 && endLine == -1) || (startLine >= 1 && endLine == -1) || (startLine in 1..endLine)
     }
 
     private val supportedTypes = supportedTypes.toSet()
@@ -113,6 +208,16 @@ enum class VcsHost(
      * Return whether this host is applicable for [url].
      */
     fun isApplicable(url: URI) = url.host == hostname
+
+    /**
+     * Return whether this host is applicable for [vcsInfo].
+     */
+    fun isApplicable(vcsInfo: VcsInfo) =
+        try {
+            vcsInfo.type in supportedTypes && isApplicable(URI(vcsInfo.url))
+        } catch (e: URISyntaxException) {
+            false
+        }
 
     /**
      * Return all [VcsInfo] that can be extracted from the host-specific [projectUrl].
@@ -126,6 +231,21 @@ enum class VcsHost(
         }
 
     protected abstract fun toVcsInfo(projectUrl: URI): VcsInfo
+
+    /**
+     * Return the host-specific permanent link to browse the code location described by [vcsInfo] with optional
+     * highlighting of [startLine] to [endLine].
+     */
+    fun toPermalink(vcsInfo: VcsInfo, startLine: Int = -1, endLine: Int = -1): String? {
+        val normalizedVcsInfo = vcsInfo.normalize()
+        if (!isApplicable(normalizedVcsInfo) || !validateLineRange(startLine, endLine)) return null
+        return toPermalink(URI(normalizedVcsInfo.url), vcsInfo.revision, vcsInfo.path, startLine, endLine)
+    }
+
+    protected abstract fun toPermalink(
+        vcsUrl: URI, revision: String, path: String,
+        startLine: Int, endLine: Int
+    ): String
 }
 
 private fun gitProjectUrlToVcsInfo(projectUrl: URI): VcsInfo {
