@@ -19,6 +19,7 @@
 
 package com.here.ort.reporter.reporters
 
+import com.here.ort.downloader.VcsHost
 import com.here.ort.model.Environment
 import com.here.ort.model.OrtResult
 import com.here.ort.model.Project
@@ -501,8 +502,21 @@ class StaticHtmlReporter : Reporter() {
                     dl {
                         dd {
                             row.detectedLicenses.forEach { (finding, excludes) ->
+                                val firstFinding = finding.locations.first()
+                                val permalink = VcsHost.toPermalink(row.vcsInfo.copy(path = firstFinding.path),
+                                    firstFinding.startLine, firstFinding.endLine)
+
                                 if (excludes.isEmpty()) {
-                                    div { +finding.license }
+                                    div {
+                                        if (permalink != null) {
+                                            a {
+                                                href = permalink
+                                                +finding.license
+                                            }
+                                        } else {
+                                            +finding.license
+                                        }
+                                    }
                                 } else {
                                     div("ort-excluded") {
                                         +"${finding.license} (Excluded: "
